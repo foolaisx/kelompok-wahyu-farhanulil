@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 int mKanan1=9;
 int mKanan2=10;
 int mKiri1=6;
@@ -14,8 +15,6 @@ char p6=A5;
 char p7=7;
 char p8=8;
 
-int Kp = 15;
-int Kd = 5;
 int rate = 0;
 int moveControl = 0;
 int kecepatanMotorKanan = 0;
@@ -27,10 +26,22 @@ int NilaiMaxSensor[8];
 int NilaiMinSensor[8];
 int NilaiTengahSensor[8];
 
-int led1 = 8;
-int led2 = 7;
+int state =0;
+int setting =0;
+int peka[8];
+int Kp=20;
+int Kd=5;
 int kondisi[8];
 
+//button
+int kirib  = 3;
+int kirid  = 2;
+int kananb = 12;
+int kanand = 11;
+
+//led
+int ledkanan = 8;
+int ledkiri  = 7;
 void setup(){
   Serial.begin(9600);
   pinMode(mKanan1,OUTPUT);
@@ -52,11 +63,9 @@ void setup(){
   for(int i=0; i<8; i++){
     NilaiMaxSensor[i]=1023;
     NilaiMinSensor[i]=0;
+    peka[i]=500;
   }
-}
-
-void loop(){
-  kondisi[0] = digitalRead(p1);
+   kondisi[0] = digitalRead(p1);
   kondisi[1] = digitalRead(p2);
   kondisi[2] = digitalRead(p3);
   kondisi[3] = digitalRead(p4);
@@ -64,7 +73,7 @@ void loop(){
   kondisi[5] = digitalRead(p6);
   kondisi[6] = digitalRead(p7);
   kondisi[7] = digitalRead(p8);
-
+  
   for(int i=0; i<8; i++){
     sensor[i]==kondisi[i];
     if(sensor[i] > NilaiMinSensor[i]){
@@ -73,63 +82,126 @@ void loop(){
     if(sensor[i] < NilaiMaxSensor[i]){
       NilaiMaxSensor[i] =sensor[i];
     }
-    NilaiTengahSensor[i]= NilaiMinSensor[i]+NilaiMaxSensor[i]/2;
-    digitalWrite(led1,HIGH);
-    digitalWrite(led2,HIGH);
+    NilaiTengahSensor[i]= (NilaiMinSensor[i]+NilaiMaxSensor[i])/2;
+  }
+  for(int i=0; i<8; i++){
+    EEPROM.write(i, NilaiTengahSensor[i]);
+    peka[i]=EEPROM.read(i)*4;
+    EEPROM.write(8, Kp);
+    Kp=EEPROM.read(8);
+    EEPROM.write(9, Kd);
+    Kd=EEPROM.read(9);
+    Serial.print("peka(");
+    Serial.print(i);
+    Serial.print(") : ");
+    Serial.print(peka[i]);
+    Serial.print("Kp :");
+    Serial.print(Kp);
+    Serial.print("Kd :");
+    Serial.print(Kd);
     delay(1000);
-    digitalWrite(led1,LOW);
-    digitalWrite(led2,LOW);
+  }   
+}
+
+void loop(){
+
+  if(digitalRead(kirib)==LOW){
+    state==1;
+  }if(digitalRead(kirid)==LOW){
+    state==2;
+  }if(digitalRead(kirib)==LOW && setting==1){
+    state==3;
+  }if(digitalRead(kirid)==LOW && setting==1){
+    state==4;
+  }if(digitalRead(kananb)==LOW && setting==1){
+    state==5;
+  }if(digitalRead(kanand)==LOW && setting==1){
+    state==6;
+  }
+
+  //state
+  if(state==1){
+    //auto calibration
+  }if(state==2){
+    for(int i=0; i<8; i++){
+      EEPROM.write(i,peka[i]/4);
+    }
+    EEPROM.write(8,Kd);
+    EEPROM.write(9,Kp);
+  }if(state==3){
+    digitalWrite(ledkiri,HIGH);
     delay(1000);
+    digitalWrite(ledkiri,LOW);
+    Kp=Kp-1;
+    digitalWrite(8,Kp);
+  }if(state==4){
+    digitalWrite(ledkiri,HIGH);
+    delay(1000);
+    digitalWrite(ledkiri,LOW);
+    Kp=Kp+1;
+    digitalWrite(8,Kp);
+  }if(state==5){
+    digitalWrite(ledkiri,HIGH);
+    delay(1000);
+    digitalWrite(ledkiri,LOW);
+    Kd=Kd-1;
+    digitalWrite(9,Kd);
+  }if(state==6){
+    digitalWrite(ledkiri,HIGH);
+    delay(1000);
+    digitalWrite(ledkiri,LOW);
+    Kd=Kd+1;
+    digitalWrite(9,Kd);
   }
   
-  String kondisix = String(kondisi[0]+kondisi[1]+kondisi[2]+kondisi[3]+kondisi[4]+kondisi[5]+kondisi[6]+kondisi[7]);
+  String kondisi = String(kondisi[0]+kondisi[1]+kondisi[2]+kondisi[3]+kondisi[4]+kondisi[5]+kondisi[6]+kondisi[7]);
 
-  if(kondisix = "10000000"){
+  if(kondisi = "10000000"){
     satu();
   }
-  else if(kondisix = "11000000"){
+  else if(kondisi = "11000000"){
     dua();
   }
-  else if(kondisix = "01000000"){
+  else if(kondisi = "01000000"){
     tiga();
   }
-  else if(kondisix = "01100000"){
+  else if(kondisi = "01100000"){
     empat();
   }
-  else if(kondisix = "00100000"){
+  else if(kondisi = "00100000"){
     lima();
   }
-  else if(kondisix = "00110000"){
+  else if(kondisi = "00110000"){
     enam();
   }
-  else if(kondisix = "00010000"){
+  else if(kondisi = "00010000"){
     tujuh();
   }
-  else if(kondisix = "00011000"){
+  else if(kondisi = "00011000"){
     delapan();
   }
-  else if(kondisix = "00001000"){
+  else if(kondisi = "00001000"){
     sembilan();
   }
-  else if(kondisix = "00001100"){
+  else if(kondisi = "00001100"){
     sepuluh();
   }
-  else if(kondisix = "00000100"){
+  else if(kondisi = "00000100"){
     sebelas();
   }
-  else if(kondisix = "00000110"){
+  else if(kondisi = "00000110"){
     duabelas();
   }
-  else if(kondisix = "00000010"){
+  else if(kondisi = "00000010"){
     tigabelas();
   }
-  else if(kondisix = "00000011"){
+  else if(kondisi = "00000011"){
     empatbelas();
   }
-  else if(kondisix = "00000001"){
+  else if(kondisi = "00000001"){
     limabelas();
   }
-  else if(kondisix = "00000000"){
+  else if(kondisi = "00000000"){
     enambelas();
   }
   
@@ -150,8 +222,10 @@ void satu(){
   Serial.println("Error = -7");
 }
 void dua(){
-  int LastError = -6;
-  moveControl = Kp*LastError;
+  int Error = -6;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
   kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
@@ -163,8 +237,10 @@ void dua(){
   Serial.println("Error = -6");
 }
 void tiga(){
-  int LastError = -5;
-  moveControl = Kp*LastError;
+  int Error = -5;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
   kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
@@ -176,8 +252,10 @@ void tiga(){
   Serial.println("Error = -5");
 }
 void empat(){
-  int LastError = -4;
-  moveControl = Kp*LastError;
+  int Error = -4;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
   kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
@@ -189,8 +267,10 @@ void empat(){
   Serial.println("Error = -4");
 }
 void lima(){
-  int LastError = -3;
-  moveControl = Kp*LastError;
+  int Error = -3;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
   kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
@@ -202,9 +282,11 @@ void lima(){
   Serial.println("Error = -3");
 }
 void enam(){
-  int LastError = -2;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
+  int Error = -2;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
@@ -215,9 +297,11 @@ void enam(){
   Serial.println("Error = -2");
 }
 void tujuh(){
-  int LastError = -1;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
+  int Error = -1;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
@@ -228,9 +312,11 @@ void tujuh(){
   Serial.println("Error = -1");
 }
 void delapan(){
-  int LastError = 0;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
+  int Error = 0;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
@@ -241,9 +327,11 @@ void delapan(){
   Serial.println("Error = 0");
 }
 void sembilan(){
-  int LastError = 1;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
+  int Error = 1;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
@@ -254,9 +342,11 @@ void sembilan(){
   Serial.println("Error = 1");
 }
 void sepuluh(){
-  int LastError = 2;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
+  int Error = 2;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
   kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
@@ -267,10 +357,12 @@ void sepuluh(){
   Serial.println("Error = 2");
 }
 void sebelas(){
-  int LastError = 3;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
-  kecepatanMotorKiri  = kecepatanSetPoint - moveControl;
+  int Error = 3;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
+  kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
   digitalWrite(mKiri1,HIGH);
@@ -280,10 +372,12 @@ void sebelas(){
   Serial.println("Error = 3");
 }
 void duabelas(){
-  int LastError = 4;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
-  kecepatanMotorKiri  = kecepatanSetPoint - moveControl;
+  int Error = 4;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
+  kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
   digitalWrite(mKiri1,HIGH);
@@ -293,10 +387,12 @@ void duabelas(){
   Serial.println("Error = 4");
 }
 void tigabelas(){
-  int LastError = 5;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
-  kecepatanMotorKiri  = kecepatanSetPoint - moveControl;
+  int Error = 5;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
+  kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
   digitalWrite(mKiri1,HIGH);
@@ -306,10 +402,12 @@ void tigabelas(){
   Serial.println("Error = 5");
 }
 void empatbelas(){
-  int LastError = 6;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
-  kecepatanMotorKiri  = kecepatanSetPoint - moveControl;
+  int Error = 6;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
+  kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
   digitalWrite(mKiri1,HIGH);
@@ -319,10 +417,12 @@ void empatbelas(){
   Serial.println("Error = 6");
 }
 void limabelas(){
-  int LastError = 7;
-  moveControl = Kp*LastError;
-  kecepatanMotorKanan = kecepatanSetPoint + moveControl;
-  kecepatanMotorKiri  = kecepatanSetPoint - moveControl;
+  int Error = 7;
+  int LastError = Error;
+  int rate = (Error-LastError);
+  moveControl = (Kp*Error)+(Kd+rate);
+  kecepatanMotorKanan = kecepatanSetPoint - moveControl;
+  kecepatanMotorKiri  = kecepatanSetPoint + moveControl;
   digitalWrite(mKanan1,HIGH);
   digitalWrite(mKanan2,LOW);
   digitalWrite(mKiri1,HIGH);
